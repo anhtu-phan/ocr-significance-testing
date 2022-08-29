@@ -18,7 +18,6 @@ import string
 sys.path.append('../')
 from utils import str_filt
 from utils.labelmaps import get_vocabulary, labels2strs
-from IPython import embed
 random.seed(0)
 
 scale = 0.90
@@ -130,6 +129,7 @@ class lmdbDataset_real(Dataset):
         except IOError or len(word) > self.max_len:
             return self[index + 1]
         label_str = str_filt(word, self.voc_type)
+        # print(f"load image with label ------>>>>>>>>> {label_str}")
         return img_HR, img_lr, label_str
 
 
@@ -292,6 +292,7 @@ class ConcatDataset(Dataset):
     def __init__(self, datasets):
         super(ConcatDataset, self).__init__()
         assert len(datasets) > 0, 'datasets should not be an empty iterable'
+        # print("----->>>>>>>>>!!!!!!! concat ", datasets)
         self.datasets = list(datasets)
         self.cumulative_sizes = self.cumsum(self.datasets)
 
@@ -311,7 +312,3 @@ class ConcatDataset(Dataset):
         warnings.warn("cummulative_sizes attribute is renamed to "
                       "cumulative_sizes", DeprecationWarning, stacklevel=2)
         return self.cumulative_sizes
-
-
-if __name__ == '__main__':
-    embed(header='dataset.py')

@@ -1,31 +1,20 @@
-import os
-import cv2
-import sys
-import time
-import math
 import copy
-import torch
-import pickle
-import shutil
-import random
 import logging
-import numpy as np
-import torchvision
-from PIL import Image
-from tqdm import tqdm
-import torch.nn as nn
-from IPython import embed
-from interfaces import base
-from utils import utils_moran
+import os
+import random
+import time
 from datetime import datetime
-from utils.util import str_filt
-from time import gmtime, strftime
-from utils import util, ssim_psnr
+
+import numpy as np
+import torch
+from IPython import embed
+from PIL import Image
 from torchvision import transforms
-from torch.autograd import Variable
-from utils.meters import AverageMeter
-from utils.metrics import get_str_list, Accuracy
-from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+
+from interfaces import base
+from utils.metrics import get_str_list
+from utils.util import str_filt
 
 to_pil = transforms.ToPILImage()
 
@@ -33,6 +22,8 @@ times = 0
 easy_test_times = 0
 medium_test_times = 0
 hard_test_times = 0
+
+
 class TextSR(base.TextBase):
     def train(self):
         cfg = self.config.TRAIN
@@ -55,9 +46,13 @@ class TextSR(base.TextBase):
         best_acc = 0
         converge_list = []
 
+        logging.info(f"DONE load model !!!!!!!!!!!!!!! device={self.device} !!!!!")
+
         for epoch in range(cfg.epochs):
             for j, data in (enumerate(train_loader)):
+                # print("LOAD train_loader done ====>>>>>")
                 model.train()
+                # print("DONE train model =====>>>>> ")
                 for p in model.parameters():
                     p.requires_grad = True
                 iters = len(train_loader) * epoch + j
@@ -67,11 +62,14 @@ class TextSR(base.TextBase):
                 images_hr = images_hr.to(self.device)
 
                 sr_img = model(images_lr)
+                # logging.info("DONE train model (forward step) =====>>>>> ")
 
                 loss, mse_loss, attention_loss, recognition_loss = image_crit(sr_img, images_hr, label_strs)
 
+                # logging.info("DONE cal loss ====>>>>>>>>>>")
+
                 global times
-                self.writer.add_scalar('loss/mse_loss', mse_loss , times)
+                self.writer.add_scalar('loss/mse_loss', mse_loss, times)
                 self.writer.add_scalar('loss/position_loss', attention_loss, times)
                 self.writer.add_scalar('loss/content_loss', recognition_loss, times)
                 times += 1
@@ -85,20 +83,20 @@ class TextSR(base.TextBase):
 
                 if iters % cfg.displayInterval == 0:
                     logging.info('[{}]\t'
-                          'Epoch: [{}][{}/{}]\t'
-                          # 'vis_dir={:s}\t'
-                          'total_loss {:.3f} \t'
-                          'mse_loss {:.3f} \t'
-                          'attention_loss {:.3f} \t'
-                          'recognition_loss {:.3f} \t'
-                          .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                  epoch, j + 1, len(train_loader),
-                                  # self.vis_dir,
-                                  float(loss_im.data),
-                                  mse_loss,
-                                  attention_loss,
-                                  recognition_loss
-                                  ))
+                                 'Epoch: [{}][{}/{}]\t'
+                                 # 'vis_dir={:s}\t'
+                                 'total_loss {:.3f} \t'
+                                 'mse_loss {:.3f} \t'
+                                 'attention_loss {:.3f} \t'
+                                 'recognition_loss {:.3f} \t'
+                                 .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                         epoch, j + 1, len(train_loader),
+                                         # self.vis_dir,
+                                         float(loss_im.data),
+                                         mse_loss,
+                                         attention_loss,
+                                         recognition_loss
+                                         ))
 
                 if iters % cfg.VAL.valInterval == 0:
                     logging.info('======================================================')
@@ -139,7 +137,6 @@ class TextSR(base.TextBase):
                     self.save_checkpoint(model, epoch, iters, best_history_acc, best_model_info, False, converge_list,
                                          self.args.exp_name)
 
-
     def get_crnn_pred(self, outputs):
         alphabet = '-0123456789abcdefghijklmnopqrstuvwxyz'
         predict_result = []
@@ -156,7 +153,6 @@ class TextSR(base.TextBase):
                         last = ""
             predict_result.append(out_str)
         return predict_result
-
 
     def eval(self, model, val_loader, image_crit, index, recognizer, aster_info, mode):
         global easy_test_times
@@ -183,10 +179,10 @@ class TextSR(base.TextBase):
             images_sr = model(images_lr)
 
             if i == len(val_loader) - 1:
-                index = random.randint(0, images_lr.shape[0]-1)
-                self.writer.add_image(f'vis/{mode}/lr_image', images_lr[index,...], easy_test_times)
-                self.writer.add_image(f'vis/{mode}/sr_image', images_sr[index,...], easy_test_times)
-                self.writer.add_image(f'vis/{mode}/hr_image', images_hr[index,...], easy_test_times)
+                index = random.randint(0, images_lr.shape[0] - 1)
+                self.writer.add_image(f'vis/{mode}/lr_image', images_lr[index, ...], easy_test_times)
+                self.writer.add_image(f'vis/{mode}/sr_image', images_sr[index, ...], easy_test_times)
+                self.writer.add_image(f'vis/{mode}/hr_image', images_hr[index, ...], easy_test_times)
 
             metric_dict['psnr'].append(self.cal_psnr(images_sr, images_hr))
             metric_dict['ssim'].append(self.cal_ssim(images_sr, images_hr))
@@ -212,11 +208,11 @@ class TextSR(base.TextBase):
         psnr_avg = sum(metric_dict['psnr']) / len(metric_dict['psnr'])
         ssim_avg = sum(metric_dict['ssim']) / len(metric_dict['ssim'])
         logging.info('[{}]\t'
-              'loss_rec {:.3f}| loss_im {:.3f}\t'
-              'PSNR {:.2f} | SSIM {:.4f}\t'
-              .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                      0, 0,
-                      float(psnr_avg), float(ssim_avg), ))
+                     'loss_rec {:.3f}| loss_im {:.3f}\t'
+                     'PSNR {:.2f} | SSIM {:.4f}\t'
+                     .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                             0, 0,
+                             float(psnr_avg), float(ssim_avg), ))
         logging.info('save display images')
         accuracy = round(n_correct / sum_images, 4)
         psnr_avg = round(psnr_avg.item(), 6)
@@ -314,8 +310,8 @@ class TextSR(base.TextBase):
                 torch.cuda.empty_cache()
                 if i % 10 == 0:
                     logging.info('Evaluation: [{}][{}/{}]\t'
-                          .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                  i + 1, len(test_loader), ))
+                                 .format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                         i + 1, len(test_loader), ))
                 # self.test_display(images_lr, images_sr, images_hr, pred_str_lr, pred_str_sr, label_strs, str_filt)
             time_end = time.time()
             psnr_avg = sum(metric_dict['psnr']) / len(metric_dict['psnr'])
@@ -412,12 +408,12 @@ class TextSR(base.TextBase):
                 preds_lr = preds_lr.transpose(1, 0).contiguous().view(-1)
                 preds_size = torch.IntTensor([crnn_output_lr.size(0)] * 1)
                 pred_str_lr = self.converter_crnn.decode(preds_lr.data, preds_size.data, raw=False)
-            logging.info('{} ===> {}'.format(pred_str_lr, pred_str_sr))
+            print('{} ===> {}'.format(pred_str_lr, pred_str_sr))
             torch.cuda.empty_cache()
         sum_images = len(os.listdir(self.args.demo_dir))
         time_end = time.time()
         fps = sum_images / (time_end - time_begin)
-        logging.info('fps={}'.format(fps))
+        print('fps={}'.format(fps))
 
 
 if __name__ == '__main__':

@@ -1,12 +1,6 @@
-import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from collections import OrderedDict
-import sys
-from torch.nn import init
-import numpy as np
-from IPython import embed
 import warnings
 import math, copy
 
@@ -80,7 +74,10 @@ class FeatureEnhancer(nn.Module):
         conv_feature: (batch, channel, H, W)
         '''
         batch = conv_feature.shape[0]
-        position2d = positionalencoding2d(64,16,64).float().cuda().unsqueeze(0).view(1,64,1024)
+        if torch.cuda.is_available():
+            position2d = positionalencoding2d(64,16,64).float().cuda().unsqueeze(0).view(1,64,1024)
+        else:
+            position2d = positionalencoding2d(64,16,64).float().unsqueeze(0).view(1,64,1024)
         position2d = position2d.repeat(batch,1,1)
         conv_feature = torch.cat([conv_feature, position2d],1) # batch, 128(64+64), 32, 128
         result = conv_feature.permute(0, 2, 1).contiguous()

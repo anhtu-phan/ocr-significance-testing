@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from torchvision.models.vgg import vgg16
-from IPython import embed
 
 
 class GeneratorLoss(nn.Module):

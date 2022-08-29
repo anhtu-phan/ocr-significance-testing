@@ -6,7 +6,6 @@ import torch.nn as nn
 from torch.autograd import Variable
 import collections
 import string
-from IPython import embed
 
 
 def str_filt(str_, voc_type):
@@ -169,4 +168,3 @@ def assureRatio(img):
 
 if __name__=='__main__':
     converter = strLabelConverter(string.digits+string.ascii_lowercase)
-    embed()

@@ -3,7 +3,6 @@ from math import exp
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
-from IPython import embed
 
 
 def calculate_psnr(img1, img2):
@@ -87,7 +86,3 @@ def ssim(img1, img2, window_size=11, size_average=True):
     window = window.type_as(img1)
 
     return _ssim(img1, img2, window, window_size, channel, size_average)
-
-
-if __name__=='__main__':
-    embed()

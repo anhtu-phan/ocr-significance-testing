@@ -1,23 +1,14 @@
 import random
 import torch
 from torch.utils.data import Dataset
-from torch.utils.data import sampler
 import torchvision.transforms as transforms
-import lmdb
-import six
 import cv2
 import sys
 import os
-import bisect
-import warnings
 from PIL import Image
 import numpy as np
-import string
 
 sys.path.append('../')
-from utils import str_filt
-from utils.labelmaps import get_vocabulary, labels2strs
-from IPython import embed
 random.seed(0)
 
 

@@ -1,15 +1,8 @@
-import cv2
-import sys
-import time
 import torch
 import string
-import random
 import numpy as np
 import torch.nn as nn
-import torch.optim as optim
 from loss.transformer import Transformer
-
-# ce_loss = torch.nn.CrossEntropyLoss()
 from loss.weight_ce_loss import weight_cross_entropy
 
 
@@ -53,9 +46,14 @@ class TextFocusLoss(nn.Module):
 
     def build_up_transformer(self):
 
-        transformer = Transformer().cuda()
+        transformer = Transformer()
+        if torch.cuda.is_available():
+            transformer = transformer.cuda()
         transformer = nn.DataParallel(transformer)
-        transformer.load_state_dict(torch.load('./dataset/mydata/pretrain_transformer.pth'))
+        if not torch.cuda.is_available():
+            transformer.load_state_dict(torch.load('./dataset/mydata/pretrain_transformer.pth', map_location=torch.device('cpu')))
+        else:
+            transformer.load_state_dict(torch.load('./dataset/mydata/pretrain_transformer.pth'))
         transformer.eval()
         self.transformer = transformer
 
@@ -63,7 +61,9 @@ class TextFocusLoss(nn.Module):
         batch = len(label)
 
         length = [len(i) for i in label]
-        length_tensor = torch.Tensor(length).long().cuda()
+        length_tensor = torch.Tensor(length).long()
+        if torch.cuda.is_available():
+            length_tensor = length_tensor.cuda()
 
         max_length = max(length)
         input_tensor = np.zeros((batch, max_length))
@@ -75,9 +75,13 @@ class TextFocusLoss(nn.Module):
         for i in label:
             for j in i:
                 text_gt.append(self.english_dict[j])
-        text_gt = torch.Tensor(text_gt).long().cuda()
+        text_gt = torch.Tensor(text_gt).long()
+        if torch.cuda.is_available():
+            text_gt = text_gt.cuda()
 
-        input_tensor = torch.from_numpy(input_tensor).long().cuda()
+        input_tensor = torch.from_numpy(input_tensor).long()
+        if torch.cuda.is_available():
+            input_tensor = input_tensor.cuda()
         return length_tensor, input_tensor, text_gt
 
 

@@ -1,10 +1,6 @@
-import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from torch.autograd import Variable
-from IPython import embed
 
 
 class sub_pixel(nn.Module):
@@ -90,5 +86,5 @@ class RDN(nn.Module):
         return output
 
 
-if __name__=='__main__':
-    embed()
+# if __name__=='__main__':
+    # embed()

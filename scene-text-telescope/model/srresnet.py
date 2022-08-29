@@ -1,8 +1,6 @@
 import math
-import torch
 import torch.nn.functional as F
 from torch import nn
-from collections import OrderedDict
 import sys
 sys.path.append('./')
 sys.path.append('../')

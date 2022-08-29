@@ -1,12 +1,6 @@
-import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from collections import OrderedDict
-import sys
-from torch.nn import init
-import numpy as np
-from IPython import embed
 import warnings
 import math, copy
 warnings.filterwarnings("ignore")
@@ -147,4 +141,3 @@ class GruBlock(nn.Module):
 
 if __name__ == '__main__':
     img = torch.zeros(7, 3, 16, 64)
-    embed()

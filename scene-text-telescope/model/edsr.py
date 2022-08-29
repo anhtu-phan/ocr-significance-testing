@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import math
-from IPython import embed
 
 
 class MeanShift(nn.Conv2d):
@@ -87,5 +86,5 @@ class EDSR(nn.Module):
         return out
 
 
-if __name__=='__main__':
-    embed()
+# if __name__=='__main__':
+#     embed()

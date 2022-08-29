@@ -1,11 +1,12 @@
 import os
 import yaml
 import argparse
-from IPython import embed
 from easydict import EasyDict
 from interfaces.super_resolution import TextSR
 
+
 def main(config, args):
+    # print(f"train {config} {args}")
     Mission = TextSR(config, args)
     if args.test:
         Mission.test()
@@ -14,10 +15,12 @@ def main(config, args):
     else:
         Mission.train()
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--arch', default='tbsrn', choices=['tbsrn', 'tsrn', 'bicubic', 'srcnn', 'vdsr', 'srres', 'esrgan', 'rdn',
-                                                           'edsr', 'lapsrn'])
+    parser.add_argument('--arch', default='tbsrn',
+                        choices=['tbsrn', 'tsrn', 'bicubic', 'srcnn', 'vdsr', 'srres', 'esrgan', 'rdn',
+                                 'edsr', 'lapsrn'])
     parser.add_argument('--text_focus', action='store_true')
     parser.add_argument('--exp_name', required=True, help='Type your experiment name')
     parser.add_argument('--test', action='store_true', default=False)

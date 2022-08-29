@@ -1,33 +1,30 @@
+import logging
 import os
-import cv2
-import sys
-import math
-import torch
 import shutil
 import string
-import logging
+import sys
+from collections import OrderedDict
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
 import torchvision
 from PIL import Image
-from tqdm import tqdm
-import torch.nn as nn
-from IPython import embed
-import torch.optim as optim
-from torchvision import transforms
-from torch.autograd import Variable
-from collections import OrderedDict
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import transforms
 
-from model import tbsrn, tsrn, edsr, srcnn, srresnet, crnn
 import dataset.dataset as dataset
-from dataset import lmdbDataset, alignCollate_real, ConcatDataset, lmdbDataset_real, alignCollate_syn, lmdbDataset_mix
-from loss import gradient_loss, percptual_loss, text_focus_loss
-from utils import util, ssim_psnr, utils_moran, utils_crnn
-from utils.labelmaps import get_vocabulary, labels2strs
+from dataset import lmdbDataset, alignCollate_real, lmdbDataset_real, alignCollate_syn, lmdbDataset_mix
+from loss import text_focus_loss
+from model import tbsrn, tsrn, edsr, srcnn, srresnet, crnn
+from utils import ssim_psnr, utils_moran, utils_crnn
+from utils.labelmaps import get_vocabulary
 
 
 def get_parameter_number(net):
     total_num = sum(p.numel() for p in net.parameters())
     return total_num
+
 
 class TextBase(object):
     def __init__(self, config, args):
@@ -61,7 +58,7 @@ class TextBase(object):
         self.cal_psnr = ssim_psnr.calculate_psnr
         self.cal_ssim = ssim_psnr.SSIM()
         self.mask = self.args.mask
-        alphabet_moran = ':'.join(string.digits+string.ascii_lowercase+'$')
+        alphabet_moran = ':'.join(string.digits + string.ascii_lowercase + '$')
         self.converter_moran = utils_moran.strLabelConverterForAttention(alphabet_moran, ':')
         self.converter_crnn = utils_crnn.strLabelConverter(string.digits + string.ascii_lowercase)
         if not args.test and not args.demo:
@@ -72,8 +69,8 @@ class TextBase(object):
 
     def make_logger(self):
         self.logging.basicConfig(filename="checkpoint/{}/log.txt".format(self.args.exp_name),
-                            level=self.logging.INFO,
-                            format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
+                                 level=self.logging.INFO,
+                                 format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
         self.logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
         self.logging.info(str(self.args))
 
@@ -83,10 +80,8 @@ class TextBase(object):
             print(f'Clean the old checkpoint {self.args.exp_name}')
         os.mkdir('checkpoint/{}'.format(self.args.exp_name))
 
-
     def make_writer(self):
         self.writer = SummaryWriter('checkpoint/{}'.format(self.args.exp_name))
-
 
     def get_train_data(self):
         cfg = self.config.TRAIN
@@ -103,10 +98,11 @@ class TextBase(object):
 
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=self.batch_size,
-            shuffle=True, num_workers=int(cfg.workers),
+            shuffle=True,
             collate_fn=self.align_collate(imgH=cfg.height, imgW=cfg.width, down_sample_scale=cfg.down_sample_scale,
                                           mask=self.mask),
             drop_last=True)
+        # print(f"DONE init train loader ====>>>>>>> batch_size={self.batch_size} workers={cfg.workers}")
         return train_dataset, train_loader
 
     def get_val_data(self):
@@ -129,7 +125,7 @@ class TextBase(object):
                                          )
         test_loader = torch.utils.data.DataLoader(
             test_dataset, batch_size=self.batch_size,
-            shuffle=False, num_workers=int(cfg.workers),
+            shuffle=False,
             collate_fn=self.align_collate(imgH=cfg.height, imgW=cfg.width, down_sample_scale=cfg.down_sample_scale,
                                           mask=self.mask),
             drop_last=False)
@@ -139,7 +135,7 @@ class TextBase(object):
         cfg = self.config.TRAIN
         if self.args.arch == 'tbsrn':
             model = tbsrn.TBSRN(scale_factor=self.scale_factor, width=cfg.width, height=cfg.height,
-                              STN=self.args.STN, mask=self.mask, srb_nums=self.args.srb, hidden_units=self.args.hd_u)
+                                STN=self.args.STN, mask=self.mask, srb_nums=self.args.srb, hidden_units=self.args.hd_u)
             image_crit = text_focus_loss.TextFocusLoss(self.args)
         elif self.args.arch == 'tsrn':
             model = tsrn.TSRN(scale_factor=self.scale_factor, width=cfg.width, height=cfg.height,
@@ -199,7 +195,7 @@ class TextBase(object):
 
     def tripple_display(self, image_in, image_out, image_target, pred_str_lr, pred_str_sr, label_strs, index):
         for i in (range(self.config.TRAIN.VAL.n_vis)):
-            tensor_in = image_in[i][:3,:,:]
+            tensor_in = image_in[i][:3, :, :]
             transform = transforms.Compose(
                 [transforms.ToPILImage(),
                  transforms.Resize((image_target.shape[-2], image_target.shape[-1]), interpolation=Image.BICUBIC),
@@ -207,8 +203,8 @@ class TextBase(object):
             )
 
             tensor_in = transform(tensor_in.cpu())
-            tensor_out = image_out[i][:3,:,:]
-            tensor_target = image_target[i][:3,:,:]
+            tensor_out = image_out[i][:3, :, :]
+            tensor_target = image_target[i][:3, :, :]
             images = ([tensor_in, tensor_out.cpu(), tensor_target.cpu()])
             vis_im = torch.stack(images)
             vis_im = torchvision.utils.make_grid(vis_im, nrow=1, padding=0)
@@ -235,7 +231,8 @@ class TextBase(object):
                     tensor_target = image_target[i].cpu()
                     transform = transforms.Compose(
                         [transforms.ToPILImage(),
-                         transforms.Resize((image_target.shape[-2], image_target.shape[-1]), interpolation=Image.BICUBIC),
+                         transforms.Resize((image_target.shape[-2], image_target.shape[-1]),
+                                           interpolation=Image.BICUBIC),
                          transforms.ToTensor()]
                     )
                     tensor_in = transform(tensor_in)
@@ -258,12 +255,12 @@ class TextBase(object):
         if not os.path.exists(ckpt_path):
             os.mkdir(ckpt_path)
         save_dict = {
-            'state_dict_G': netG.module.state_dict(),
+            'state_dict_G': netG.state_dict(),
             'info': {'arch': self.args.arch, 'iters': iters, 'epochs': epoch, 'batch_size': self.batch_size,
                      'voc_type': self.voc_type, 'up_scale_factor': self.scale_factor},
             'best_history_res': best_acc_dict,
             'best_model_info': best_model_info,
-            'param_num': sum([param.nelement() for param in netG.module.parameters()]),
+            'param_num': sum([param.nelement() for param in netG.parameters()]),
             'converge': converge_list
         }
         if is_best:
@@ -273,7 +270,7 @@ class TextBase(object):
 
     def MORAN_init(self):
         cfg = self.config.TRAIN
-        alphabet = ':'.join(string.digits+string.ascii_lowercase+'$')
+        alphabet = ':'.join(string.digits + string.ascii_lowercase + '$')
         MORAN = moran.MORAN(1, len(alphabet.split(':')), 256, 32, 100, BidirDecoder=True,
                             inputDataType='torch.cuda.FloatTensor', CUDA=True)
         model_path = self.config.TRAIN.VAL.moran_pretrained

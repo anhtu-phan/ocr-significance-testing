@@ -1,10 +1,6 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import numpy as np
-from PIL import Image
-from IPython import embed
-from torchvision import transforms
 
 
 class GradientPriorLoss(nn.Module):
@@ -26,7 +22,3 @@ class GradientPriorLoss(nn.Module):
         b = F.pad(x, (0, 0, 0, 1))[:, :, 1:, :]
         xgrad = torch.pow(torch.pow((r - l) * 0.5, 2) + torch.pow((t - b) * 0.5, 2), 0.5)
         return xgrad
-
-
-if __name__ == '__main__':
-    embed()

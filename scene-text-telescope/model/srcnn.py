@@ -1,17 +1,5 @@
 import torch
-import torchvision
 import torch.nn as nn
-import numpy as np
-import torchvision.transforms as transforms
-from torch.autograd import Variable
-import torchvision.datasets as d_sets
-from torch.utils.data import DataLoader as d_loader
-import matplotlib.pyplot as plt
-from PIL import Image
-from IPython import embed
-import sys
-
-
 from .tps_spatial_transformer import TPSSpatialTransformer
 from .stn_head import STNHead
 
@@ -54,5 +42,5 @@ class SRCNN(nn.Module):
         return out
 
 
-if __name__=='__main__':
-    embed()
+# if __name__=='__main__':
+#     embed()
