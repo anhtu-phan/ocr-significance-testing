@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--srb', type=int, default=5, help='')
     parser.add_argument('--demo', action='store_true', default=False)
     parser.add_argument('--demo_dir', type=str, default='./demo')
+    parser.add_argument('--not_use_sr_method', action='store_true', default=False)
     args = parser.parse_args()
     config_path = os.path.join('config', 'super_resolution.yaml')
     config = yaml.load(open(config_path, 'r'), Loader=yaml.Loader)

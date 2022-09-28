@@ -177,7 +177,7 @@ class TextBase(object):
             if self.resume is not '':
                 self.logging.info('loading pre-trained model from %s ' % self.resume)
                 if self.config.TRAIN.ngpu == 1:
-                    model.load_state_dict(torch.load(self.resume)['state_dict_G'])
+                    model.load_state_dict(torch.load(self.resume, map_location=torch.device(self.device))['state_dict_G'])
                 else:
                     model.load_state_dict(
                         {'module.' + k: v for k, v in torch.load(self.resume)['state_dict_G'].items()})

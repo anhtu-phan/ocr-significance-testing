@@ -93,6 +93,7 @@ class lmdbDataset(Dataset):
 class lmdbDataset_real(Dataset):
     def __init__(self, root=None, voc_type='upper', max_len=100, test=False):
         super(lmdbDataset_real, self).__init__()
+        self.root = root
         self.env = lmdb.open(
             root,
             max_readers=1,
@@ -126,6 +127,10 @@ class lmdbDataset_real(Dataset):
         try:
             img_HR = buf2PIL(txn, img_HR_key, 'RGB')
             img_lr = buf2PIL(txn, img_lr_key, 'RGB')
+            if index < 10:
+                img_HR.save(f'{self.root}/imgHR_{index}.png')
+                img_lr.save(f'{self.root}/imgLR_{index}.png')
+                print(f" done write image to ------>>>>>>>>> {self.root}")
         except IOError or len(word) > self.max_len:
             return self[index + 1]
         label_str = str_filt(word, self.voc_type)
